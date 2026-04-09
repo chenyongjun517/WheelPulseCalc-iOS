@@ -35,7 +35,7 @@ jobs:
     - name: Build unsigned IPA
       run: |
         cd ios/App
-        # 直接构建 .app 目录
+        # 直接构建 .app 目录（不使用 xcpretty 避免解析错误）
         xcodebuild -workspace App.xcworkspace \
           -scheme App \
           -configuration Release \
@@ -44,12 +44,15 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          | xcpretty
+          ONLY_ACTIVE_ARCH=NO \
+          ARCHS="arm64"
         
         # 找到 .app 文件并打包成 IPA
         APP_PATH=$(find build/Build/Products -name "App.app" -type d | head -n 1)
         if [ -z "$APP_PATH" ]; then
           echo "Error: App.app not found"
+          echo "Listing build directory contents:"
+          find build -name "*.app" -type d 2>/dev/null || echo "No .app files found"
           exit 1
         fi
         echo "Found app at: $APP_PATH"
@@ -58,6 +61,7 @@ jobs:
         mkdir -p Payload
         cp -r "$APP_PATH" Payload/
         zip -r ../../../WheelPulseCalc-iOS.ipa Payload
+        rm -rf Payload
         cd ../..
         
     - name: Upload IPA artifact
@@ -68,7 +72,7 @@ jobs:
         
     - name: Upload to Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: WheelPulseCalc-iOS.ipa
         tag_name: v${{ github.run_number }}
