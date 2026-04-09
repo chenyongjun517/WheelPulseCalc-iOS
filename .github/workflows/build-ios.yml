@@ -32,37 +32,77 @@ jobs:
       run: |
         npx cap sync ios
         
-    - name: Build iOS App
+    - name: Setup signing
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        TEAM_ID: ${{ secrets.TEAM_ID }}
+      run: |
+        # 创建导出选项 plist
+        cat > ios/App/exportOptions.plist << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>compileBitcode</key>
+            <false/>
+        </dict>
+        </plist>
+        EOF
+        
+    - name: Build and Archive
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
       run: |
         cd ios/App
         xcodebuild -workspace App.xcworkspace \
           -scheme App \
           -configuration Release \
           -sdk iphoneos \
-          -derivedDataPath build \
-          CODE_SIGNING_ALLOWED=NO \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="" \
+          -archivePath build/App.xcarchive \
+          archive \
+          CODE_SIGN_STYLE=Automatic \
+          DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }} \
           | xcpretty
           
-    - name: Package IPA
+    - name: Export IPA
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
       run: |
-        cd ios/App/build/Build/Products/Release-iphoneos
-        mkdir -p Payload
-        cp -r App.app Payload/
-        zip -r ../../../../../../WheelPulseCalc-iOS.ipa Payload
+        cd ios/App
+        xcodebuild -exportArchive \
+          -archivePath build/App.xcarchive \
+          -exportPath build/Export \
+          -exportOptionsPlist exportOptions.plist \
+          -allowProvisioningUpdates \
+          | xcpretty
+          
+    - name: Rename IPA
+      run: |
+        cd ios/App/build/Export
+        mv *.ipa ../../../../WheelPulseCalc-iOS-signed.ipa
         
     - name: Upload IPA artifact
       uses: actions/upload-artifact@v4
       with:
-        name: WheelPulseCalc-iOS
-        path: WheelPulseCalc-iOS.ipa
+        name: WheelPulseCalc-iOS-signed
+        path: WheelPulseCalc-iOS-signed.ipa
         
     - name: Upload to Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       uses: softprops/action-gh-release@v1
       with:
-        files: WheelPulseCalc-iOS.ipa
+        files: WheelPulseCalc-iOS-signed.ipa
         tag_name: v${{ github.run_number }}
         name: Release v${{ github.run_number }}
         draft: false
