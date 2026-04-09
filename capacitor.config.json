@@ -1,0 +1,12 @@
+{
+  "appId": "com.wheelpulse.calculator",
+  "appName": "速度传感器参数计算器",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true,
+    "backgroundColor": "#ffffff"
+  }
+}

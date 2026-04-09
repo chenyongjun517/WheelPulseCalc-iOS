@@ -1,0 +1,18 @@
+{
+  "name": "wheelpulse-calc-ios",
+  "version": "1.2.0",
+  "description": "速度传感器参数计算器 - iOS 版",
+  "main": "index.js",
+  "scripts": {
+    "sync": "npx cap sync ios",
+    "open": "npx cap open ios",
+    "build": "npx cap build ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}
