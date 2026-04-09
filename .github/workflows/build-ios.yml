@@ -7,6 +7,12 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # 允许手动触发
 
+# 添加权限配置
+permissions:
+  contents: write
+  actions: read
+  checks: read
+
 jobs:
   build:
     runs-on: macos-latest
@@ -60,7 +66,8 @@ jobs:
         # 创建 Payload 目录并打包
         mkdir -p Payload
         cp -r "$APP_PATH" Payload/
-        zip -r ../../../WheelPulseCalc-iOS.ipa Payload
+        zip -r WheelPulseCalc-iOS.ipa Payload
+        mv WheelPulseCalc-iOS.ipa ../../
         rm -rf Payload
         cd ../..
         
